@@ -1,0 +1,130 @@
+# Canary Deployment Strategy Example
+# This demonstrates how to deploy a canary version alongside stable version
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service-stable
+  namespace: chat-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: auth-service
+      track: stable
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        track: stable
+    spec:
+      containers:
+      - name: auth-service
+        image: chatapp/auth-service:v1.0.0
+        ports:
+        - containerPort: 5001
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: MONGODB_URI
+          value: "mongodb://mongoadmin:secret@mongodb:27017/dbname?authSource=admin"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: chatapp-secrets
+              key: jwt
+        - name: PORT
+          value: "5001"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service-canary
+  namespace: chat-app
+spec:
+  replicas: 1  # 25% traffic (1 out of 4 total pods)
+  selector:
+    matchLabels:
+      app: auth-service
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        track: canary
+    spec:
+      containers:
+      - name: auth-service
+        image: chatapp/auth-service:v1.1.0
+        ports:
+        - containerPort: 5001
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: MONGODB_URI
+          value: "mongodb://mongoadmin:secret@mongodb:27017/dbname?authSource=admin"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: chatapp-secrets
+              key: jwt
+        - name: PORT
+          value: "5001"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+# Service routes to both stable and canary
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: chat-app
+spec:
+  selector:
+    app: auth-service
+  ports:
+  - port: 5001
+    targetPort: 5001
+---
+# For advanced traffic splitting, use Istio VirtualService or similar
+# Example with Istio (requires Istio installed):
+# apiVersion: networking.istio.io/v1beta1
+# kind: VirtualService
+# metadata:
+#   name: auth-service-vs
+#   namespace: chat-app
+# spec:
+#   hosts:
+#   - auth-service
+#   http:
+#   - match:
+#     - headers:
+#         canary:
+#           exact: "true"
+#     route:
+#     - destination:
+#         host: auth-service
+#         subset: canary
+#       weight: 100
+#   - route:
+#     - destination:
+#         host: auth-service
+#         subset: stable
+#       weight: 90
+#     - destination:
+#         host: auth-service
+#         subset: canary
+#       weight: 10
+
