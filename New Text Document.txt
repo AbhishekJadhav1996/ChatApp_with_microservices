@@ -1,0 +1,27 @@
+ => => unpacking to docker.io/abhishekjadhav1996/chatapp-backend:latest                                                                                                                                       0.7s
+Building Socket Service...
+[+] Building 0.3s (7/12)                                                                                                                                                                            docker:default
+ => [internal] load build definition from Dockerfile                                                                                                                                                          0.0s
+ => => transferring dockerfile: 415B                                                                                                                                                                          0.0s
+ => [internal] load metadata for docker.io/library/node:18-alpine                                                                                                                                             0.1s
+ => [internal] load .dockerignore                                                                                                                                                                             0.0s
+ => => transferring context: 2B                                                                                                                                                                               0.0s
+ => [builder 1/5] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e                                                                               0.0s
+ => => resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e                                                                                       0.0s
+ => [internal] load build context                                                                                                                                                                             0.0s
+ => => transferring context: 2.77kB                                                                                                                                                                           0.0s
+ => CACHED [builder 2/5] WORKDIR /app                                                                                                                                                                         0.0s
+ => ERROR [builder 3/5] COPY package.json package-lock.json ./                                                                                                                                                0.0s
+------
+ > [builder 3/5] COPY package.json package-lock.json ./:
+------
+Dockerfile:5
+--------------------
+   3 |     WORKDIR /app
+   4 |     
+   5 | >>> COPY package.json package-lock.json ./
+   6 |     RUN npm ci --only=production
+   7 |     
+--------------------
+ERROR: failed to build: failed to solve: failed to compute cache key: failed to calculate checksum of ref s7ezaqv1r29sv5hnu8fc3iwyl::v2dwe5aytofoz13yt2ogniesn: "/package-lock.json": not found
+ubuntu@ip-172-31-31-207:~/ChatApp_with_microservices$ 

@@ -2,9 +2,13 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci --only=production
+# Copy package.json
+COPY package.json ./
 
+# Install dependencies (npm install works without package-lock.json)
+RUN npm install --only=production
+
+# Copy source code
 COPY . .
 
 FROM node:18-alpine
