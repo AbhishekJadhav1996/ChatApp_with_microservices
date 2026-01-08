@@ -8,11 +8,14 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 spec:
   rules:
   - host: chat-tws.com
     http:
       paths:
+      # Frontend
       - pathType: Prefix
         path: "/"
         backend:
@@ -20,10 +23,19 @@ spec:
             name: frontend
             port: 
               number: 80
+      # Backend API routes
       - pathType: Prefix
         path: "/api"
         backend:
           service:
-            name: api-gateway
+            name: backend
             port: 
-              number: 5000
+              number: 5001
+      # Socket.io WebSocket connections
+      - pathType: Prefix
+        path: "/socket.io"
+        backend:
+          service:
+            name: socket-service
+            port:
+              number: 5004

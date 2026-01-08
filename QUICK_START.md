@@ -63,9 +63,9 @@ kubectl apply -f k8s/socket-service-deployment.yml
 kubectl apply -f k8s/socket-service-service.yml
 kubectl apply -f k8s/socket-service-hpa.yml
 
-kubectl apply -f k8s/api-gateway-deployment.yml
-kubectl apply -f k8s/api-gateway-service.yml
-kubectl apply -f k8s/api-gateway-hpa.yml
+kubectl apply -f k8s/backend-deployment.yml
+kubectl apply -f k8s/backend-service.yml
+kubectl apply -f k8s/backend-hpa.yml
 
 # Frontend
 kubectl apply -f k8s/frontend-deployment.yml
@@ -103,28 +103,28 @@ kubectl logs -f deployment/auth-service-deployment -n chat-app
 kubectl logs -f deployment/user-service-deployment -n chat-app
 kubectl logs -f deployment/message-service-deployment -n chat-app
 kubectl logs -f deployment/socket-service-deployment -n chat-app
-kubectl logs -f deployment/api-gateway-deployment -n chat-app
+kubectl logs -f deployment/backend-deployment -n chat-app
 ```
 
 ### Scale Manually
 ```bash
-kubectl scale deployment/auth-service-deployment --replicas=4 -n chat-app
+kubectl scale deployment/backend-deployment --replicas=4 -n chat-app
 ```
 
 ### Update Image
 ```bash
-kubectl set image deployment/auth-service-deployment \
-  auth-service=abhishekjadhav1996/chatapp-auth-service:v1.1.0 -n chat-app
+kubectl set image deployment/backend-deployment \
+  chatapp-backend=abhishekjadhav1996/chatapp-backend:v1.1.0 -n chat-app
 ```
 
 ### Rollback
 ```bash
-kubectl rollout undo deployment/auth-service-deployment -n chat-app
+kubectl rollout undo deployment/backend-deployment -n chat-app
 ```
 
 ### Port Forward (for testing)
 ```bash
-kubectl port-forward svc/api-gateway 5000:5000 -n chat-app
+kubectl port-forward svc/backend 5001:5001 -n chat-app
 kubectl port-forward svc/frontend 80:80 -n chat-app
 ```
 
@@ -136,7 +136,7 @@ docker-compose -f docker-compose.microservices.yml up -d --build
 
 Access:
 - Frontend: http://localhost
-- API Gateway: http://localhost:5000
+- Backend API: http://localhost:5001
 
 ## 📊 Monitoring
 
@@ -153,8 +153,8 @@ watch kubectl get hpa -n chat-app
 
 ### Describe Resources
 ```bash
-kubectl describe deployment/auth-service-deployment -n chat-app
-kubectl describe hpa auth-service-hpa -n chat-app
+kubectl describe deployment/backend-deployment -n chat-app
+kubectl describe hpa backend-hpa -n chat-app
 kubectl describe pod <pod-name> -n chat-app
 ```
 
@@ -198,7 +198,7 @@ kubectl get deployment metrics-server -n kube-system
 kubectl top pods -n chat-app
 
 # View detailed HPA metrics
-kubectl describe hpa auth-service-hpa -n chat-app
+kubectl describe hpa backend-hpa -n chat-app
 ```
 
 **HPA automatically scales pods based on load - no manual commands needed!**

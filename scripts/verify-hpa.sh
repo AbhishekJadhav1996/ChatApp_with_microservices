@@ -44,11 +44,8 @@ HPAS=$(kubectl get hpa -n "$NAMESPACE" -o name 2>/dev/null || echo "")
 if [ -z "$HPAS" ]; then
     echo -e "${RED}❌ No HPA resources found in namespace $NAMESPACE${NC}"
     echo "Deploy HPA configurations:"
-    echo "  kubectl apply -f k8s/auth-service-hpa.yml"
-    echo "  kubectl apply -f k8s/user-service-hpa.yml"
-    echo "  kubectl apply -f k8s/message-service-hpa.yml"
+    echo "  kubectl apply -f k8s/backend-hpa.yml"
     echo "  kubectl apply -f k8s/socket-service-hpa.yml"
-    echo "  kubectl apply -f k8s/api-gateway-hpa.yml"
     exit 1
 fi
 
@@ -96,7 +93,7 @@ echo "📈 To watch HPA in action:"
 echo "   watch kubectl get hpa -n $NAMESPACE"
 echo ""
 echo "🧪 To test auto-scaling, generate load:"
-echo "   kubectl run -it --rm load-generator --image=busybox --restart=Never -- sh -c 'while true; do wget -q -O- http://api-gateway:5000/health; done'"
+echo "   kubectl run -it --rm load-generator --image=busybox --restart=Never -- sh -c 'while true; do wget -q -O- http://backend:5001/health; done'"
 echo ""
 echo "📊 To view current scaling status:"
 echo "   kubectl get hpa -n $NAMESPACE"

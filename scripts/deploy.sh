@@ -81,26 +81,12 @@ kubectl apply -f "$K8S_DIR/mongodb-service.yml"
 echo "⏳ Waiting for MongoDB to be ready..."
 kubectl wait --for=condition=ready pod -l app=mongodb -n "$NAMESPACE" --timeout=300s || true
 
-# Deploy Auth Service
-echo "🔐 Deploying Auth Service..."
-kubectl apply -f "$K8S_DIR/auth-service-deployment.yml"
-kubectl apply -f "$K8S_DIR/auth-service-service.yml"
-echo "📈 Enabling automatic HPA for Auth Service (scales automatically based on load)..."
-kubectl apply -f "$K8S_DIR/auth-service-hpa.yml"
-
-# Deploy User Service
-echo "👤 Deploying User Service..."
-kubectl apply -f "$K8S_DIR/user-service-deployment.yml"
-kubectl apply -f "$K8S_DIR/user-service-service.yml"
-echo "📈 Enabling automatic HPA for User Service (scales automatically based on load)..."
-kubectl apply -f "$K8S_DIR/user-service-hpa.yml"
-
-# Deploy Message Service
-echo "💬 Deploying Message Service..."
-kubectl apply -f "$K8S_DIR/message-service-deployment.yml"
-kubectl apply -f "$K8S_DIR/message-service-service.yml"
-echo "📈 Enabling automatic HPA for Message Service (scales automatically based on load)..."
-kubectl apply -f "$K8S_DIR/message-service-hpa.yml"
+# Deploy Backend (handles auth and messages APIs)
+echo "🔧 Deploying Backend..."
+kubectl apply -f "$K8S_DIR/backend-deployment.yml"
+kubectl apply -f "$K8S_DIR/backend-service.yml"
+echo "📈 Enabling automatic HPA for Backend (scales automatically based on load)..."
+kubectl apply -f "$K8S_DIR/backend-hpa.yml"
 
 # Deploy Socket Service
 echo "🔌 Deploying Socket Service..."
@@ -108,13 +94,6 @@ kubectl apply -f "$K8S_DIR/socket-service-deployment.yml"
 kubectl apply -f "$K8S_DIR/socket-service-service.yml"
 echo "📈 Enabling automatic HPA for Socket Service (scales automatically based on load)..."
 kubectl apply -f "$K8S_DIR/socket-service-hpa.yml"
-
-# Deploy API Gateway
-echo "🚪 Deploying API Gateway..."
-kubectl apply -f "$K8S_DIR/api-gateway-deployment.yml"
-kubectl apply -f "$K8S_DIR/api-gateway-service.yml"
-echo "📈 Enabling automatic HPA for API Gateway (scales automatically based on load)..."
-kubectl apply -f "$K8S_DIR/api-gateway-hpa.yml"
 
 # Deploy Frontend
 echo "🎨 Deploying Frontend..."
@@ -124,7 +103,6 @@ kubectl apply -f "$K8S_DIR/frontend-service.yml"
 # Deploy Ingress
 echo "🌐 Deploying Ingress..."
 kubectl apply -f "$K8S_DIR/ingress.yml"
-kubectl apply -f "$K8S_DIR/socket-service-ingress.yml"
 
 # Deploy Pod Disruption Budgets
 echo "🛡️  Deploying Pod Disruption Budgets..."
@@ -136,11 +114,8 @@ kubectl apply -f "$K8S_DIR/network-policy.yml"
 
 # Wait for all deployments
 echo "⏳ Waiting for all deployments to be ready..."
-kubectl wait --for=condition=available --timeout=300s deployment/auth-service-deployment -n "$NAMESPACE" || true
-kubectl wait --for=condition=available --timeout=300s deployment/user-service-deployment -n "$NAMESPACE" || true
-kubectl wait --for=condition=available --timeout=300s deployment/message-service-deployment -n "$NAMESPACE" || true
+kubectl wait --for=condition=available --timeout=300s deployment/backend-deployment -n "$NAMESPACE" || true
 kubectl wait --for=condition=available --timeout=300s deployment/socket-service-deployment -n "$NAMESPACE" || true
-kubectl wait --for=condition=available --timeout=300s deployment/api-gateway-deployment -n "$NAMESPACE" || true
 kubectl wait --for=condition=available --timeout=300s deployment/frontend-deployment -n "$NAMESPACE" || true
 
 # Display status

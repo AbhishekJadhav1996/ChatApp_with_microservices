@@ -19,25 +19,13 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# Build Auth Service
-echo -e "${YELLOW}Building Auth Service...${NC}"
-docker build -t "$REGISTRY/chatapp-auth-service:$TAG" "$PROJECT_DIR/services/auth-service"
+# Build Backend (handles auth and messages APIs)
+echo -e "${YELLOW}Building Backend...${NC}"
+docker build -t "$REGISTRY/chatapp-backend:$TAG" "$PROJECT_DIR/backend"
 
-# Build User Service
-echo -e "${YELLOW}Building User Service...${NC}"
-docker build -t "$REGISTRY/chatapp-user-service:$TAG" "$PROJECT_DIR/services/user-service"
-
-# Build Message Service
-echo -e "${YELLOW}Building Message Service...${NC}"
-docker build -t "$REGISTRY/chatapp-message-service:$TAG" "$PROJECT_DIR/services/message-service"
-
-# Build Socket Service
+# Build Socket Service (WebSocket connections)
 echo -e "${YELLOW}Building Socket Service...${NC}"
 docker build -t "$REGISTRY/chatapp-socket-service:$TAG" "$PROJECT_DIR/services/socket-service"
-
-# Build API Gateway
-echo -e "${YELLOW}Building API Gateway...${NC}"
-docker build -t "$REGISTRY/chatapp-api-gateway:$TAG" "$PROJECT_DIR/services/api-gateway"
 
 # Build Frontend
 echo -e "${YELLOW}Building Frontend...${NC}"

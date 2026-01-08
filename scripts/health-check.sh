@@ -45,11 +45,8 @@ check_service() {
 }
 
 # Check all services
-check_service "auth-service" "5001"
-check_service "user-service" "5002"
-check_service "message-service" "5003"
+check_service "backend" "5001"
 check_service "socket-service" "5004"
-check_service "api-gateway" "5000"
 
 echo ""
 echo "📊 Pod Status:"

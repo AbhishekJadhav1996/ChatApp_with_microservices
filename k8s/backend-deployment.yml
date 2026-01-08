@@ -4,7 +4,12 @@ metadata:
   name: backend-deployment
   namespace: chat-app
 spec:
-  replicas: 1
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: backend
@@ -14,10 +19,11 @@ spec:
       namespace: chat-app
       labels: 
         app: backend
+        version: v1
     spec:
       containers:
       - name: chatapp-backend
-        image: trainwithshubham/chatapp-backend:latest
+        image: abhishekjadhav1996/chatapp-backend:latest
         ports:
         - containerPort: 5001
         env:
@@ -29,6 +35,57 @@ spec:
           valueFrom:
             secretKeyRef:
               name: chatapp-secrets
-              key: jwt 
+              key: jwt
+        - name: CLOUDINARY_CLOUD_NAME
+          valueFrom:
+            secretKeyRef:
+              name: chatapp-secrets
+              key: cloudinary-cloud-name
+        - name: CLOUDINARY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: chatapp-secrets
+              key: cloudinary-api-key
+        - name: CLOUDINARY_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: chatapp-secrets
+              key: cloudinary-api-secret
         - name: PORT
           value: "5001"
+        - name: FRONTEND_URL
+          value: "http://localhost:5173"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+          successThreshold: 1
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 5001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 12
+          successThreshold: 1

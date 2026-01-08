@@ -161,18 +161,18 @@ kubectl wait --for=condition=ready pod -l app=socket-service -n chat-app --timeo
 kubectl get pods -l app=socket-service -n chat-app
 ```
 
-#### 3.5 Deploy API Gateway
+#### 3.5 Deploy Backend
 
 ```bash
-kubectl apply -f k8s/api-gateway-deployment.yml
-kubectl apply -f k8s/api-gateway-service.yml
-kubectl apply -f k8s/api-gateway-hpa.yml
+kubectl apply -f k8s/backend-deployment.yml
+kubectl apply -f k8s/backend-service.yml
+kubectl apply -f k8s/backend-hpa.yml
 ```
 
 Wait and verify:
 ```bash
-kubectl wait --for=condition=ready pod -l app=api-gateway -n chat-app --timeout=300s
-kubectl get pods -l app=api-gateway -n chat-app
+kubectl wait --for=condition=ready pod -l app=backend -n chat-app --timeout=300s
+kubectl get pods -l app=backend -n chat-app
 ```
 
 ### Phase 4: Frontend Deployment
@@ -285,13 +285,11 @@ AUTH_IP=$(kubectl get svc auth-service -n chat-app -o jsonpath='{.spec.clusterIP
 USER_IP=$(kubectl get svc user-service -n chat-app -o jsonpath='{.spec.clusterIP}')
 MESSAGE_IP=$(kubectl get svc message-service -n chat-app -o jsonpath='{.spec.clusterIP}')
 SOCKET_IP=$(kubectl get svc socket-service -n chat-app -o jsonpath='{.spec.clusterIP}')
-GATEWAY_IP=$(kubectl get svc api-gateway -n chat-app -o jsonpath='{.spec.clusterIP}')
+BACKEND_IP=$(kubectl get svc backend -n chat-app -o jsonpath='{.spec.clusterIP}')
 
 # Test from within cluster
 kubectl run -it --rm test --image=curlimages/curl --restart=Never -- \
-  curl http://$AUTH_IP:5001/health
-kubectl run -it --rm test --image=curlimages/curl --restart=Never -- \
-  curl http://$GATEWAY_IP:5000/health
+  curl http://$BACKEND_IP:5001/health
 ```
 
 #### 7.3 Test Application
@@ -307,8 +305,8 @@ kubectl run -it --rm test --image=curlimages/curl --restart=Never -- \
 
 ```bash
 # Update image
-kubectl set image deployment/auth-service-deployment \
-  auth-service=abhishekjadhav1996/chatapp-auth-service:v1.1.0 -n chat-app
+kubectl set image deployment/backend-deployment \
+  chatapp-backend=abhishekjadhav1996/chatapp-backend:v1.1.0 -n chat-app
 
 # Watch rollout
 kubectl rollout status deployment/auth-service-deployment -n chat-app

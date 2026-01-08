@@ -114,7 +114,7 @@ Configure your EC2 Security Group with the following inbound rules:
 | Custom TCP | TCP | 6443 | Your IP / 0.0.0.0/0 | K3S API server (restrict if possible) |
 | Custom TCP | TCP | 10250 | VPC CIDR / 10.0.0.0/16 | Kubelet API (internal only) |
 | Custom TCP | TCP | 30000-32767 | 0.0.0.0/0 | NodePort Services range (if using NodePort) |
-| Custom TCP | TCP | 5000 | 0.0.0.0/0 | API Gateway (if exposing directly) |
+| Custom TCP | TCP | 5001 | 0.0.0.0/0 | Backend API (if exposing directly) |
 | Custom TCP | TCP | 5004 | 0.0.0.0/0 | Socket Service (WebSocket) |
 
 ### Security Group Setup Steps
@@ -150,9 +150,9 @@ Rule 5: NodePort Range
 - Port: 30000-32767
 - Source: 0.0.0.0/0
 
-Rule 6: API Gateway (Optional - if not using Ingress)
+Rule 6: Backend API (Optional - if not using Ingress)
 - Type: Custom TCP
-- Port: 5000
+- Port: 5001
 - Source: 0.0.0.0/0
 
 Rule 7: Socket Service (Optional - if not using Ingress)
@@ -263,19 +263,13 @@ docker login
 
 # Images are already tagged with abhishekjadhav1996 during build
 # If you built with a different tag, retag them:
-# docker tag chatapp/auth-service:latest abhishekjadhav1996/chatapp-auth-service:latest
-# docker tag chatapp/user-service:latest abhishekjadhav1996/chatapp-user-service:latest
-# docker tag chatapp/message-service:latest abhishekjadhav1996/chatapp-message-service:latest
+# docker tag chatapp/backend:latest abhishekjadhav1996/chatapp-backend:latest
 # docker tag chatapp/socket-service:latest abhishekjadhav1996/chatapp-socket-service:latest
-# docker tag chatapp/api-gateway:latest abhishekjadhav1996/chatapp-api-gateway:latest
 # docker tag chatapp/frontend:latest abhishekjadhav1996/chatapp-frontend:latest
 
 # Push images
-docker push abhishekjadhav1996/chatapp-auth-service:latest
-docker push abhishekjadhav1996/chatapp-user-service:latest
-docker push abhishekjadhav1996/chatapp-message-service:latest
+docker push abhishekjadhav1996/chatapp-backend:latest
 docker push abhishekjadhav1996/chatapp-socket-service:latest
-docker push abhishekjadhav1996/chatapp-api-gateway:latest
 docker push abhishekjadhav1996/chatapp-frontend:latest
 ```
 
@@ -289,11 +283,8 @@ sudo apt install -y awscli
 aws configure
 
 # Create ECR repositories
-aws ecr create-repository --repository-name chatapp/auth-service --region us-east-1
-aws ecr create-repository --repository-name chatapp/user-service --region us-east-1
-aws ecr create-repository --repository-name chatapp/message-service --region us-east-1
+aws ecr create-repository --repository-name chatapp/backend --region us-east-1
 aws ecr create-repository --repository-name chatapp/socket-service --region us-east-1
-aws ecr create-repository --repository-name chatapp/api-gateway --region us-east-1
 aws ecr create-repository --repository-name chatapp/frontend --region us-east-1
 
 # Login to ECR
@@ -302,10 +293,14 @@ aws ecr get-login-password --region us-east-1 | docker login --username AWS --pa
 # Tag and push images
 ECR_REGISTRY=<your-account-id>.dkr.ecr.us-east-1.amazonaws.com
 
-docker tag abhishekjadhav1996/chatapp-auth-service:latest $ECR_REGISTRY/chatapp/auth-service:latest
-docker push $ECR_REGISTRY/chatapp/auth-service:latest
+docker tag abhishekjadhav1996/chatapp-backend:latest $ECR_REGISTRY/chatapp/backend:latest
+docker push $ECR_REGISTRY/chatapp/backend:latest
 
-# Repeat for all services...
+docker tag abhishekjadhav1996/chatapp-socket-service:latest $ECR_REGISTRY/chatapp/socket-service:latest
+docker push $ECR_REGISTRY/chatapp/socket-service:latest
+
+docker tag abhishekjadhav1996/chatapp-frontend:latest $ECR_REGISTRY/chatapp/frontend:latest
+docker push $ECR_REGISTRY/chatapp/frontend:latest
 ```
 
 ### Update Kubernetes Manifests
@@ -377,25 +372,15 @@ chmod +x scripts/deploy.sh
 ./scripts/deploy.sh
 
 # Or deploy manually:
-kubectl apply -f k8s/auth-service-deployment.yml
-kubectl apply -f k8s/auth-service-service.yml
-kubectl apply -f k8s/auth-service-hpa.yml
+# Deploy Backend (handles auth and messages APIs)
+kubectl apply -f k8s/backend-deployment.yml
+kubectl apply -f k8s/backend-service.yml
+kubectl apply -f k8s/backend-hpa.yml
 
-kubectl apply -f k8s/user-service-deployment.yml
-kubectl apply -f k8s/user-service-service.yml
-kubectl apply -f k8s/user-service-hpa.yml
-
-kubectl apply -f k8s/message-service-deployment.yml
-kubectl apply -f k8s/message-service-service.yml
-kubectl apply -f k8s/message-service-hpa.yml
-
+# Deploy Socket Service (WebSocket connections)
 kubectl apply -f k8s/socket-service-deployment.yml
 kubectl apply -f k8s/socket-service-service.yml
 kubectl apply -f k8s/socket-service-hpa.yml
-
-kubectl apply -f k8s/api-gateway-deployment.yml
-kubectl apply -f k8s/api-gateway-service.yml
-kubectl apply -f k8s/api-gateway-hpa.yml
 ```
 
 ### Step 6: Deploy Frontend
@@ -411,9 +396,8 @@ kubectl apply -f k8s/frontend-service.yml
 # Update ingress.yml with your domain or IP
 # Edit k8s/ingress.yml and update the host field
 
-# Deploy ingress
+# Deploy ingress (routes /api to backend, /socket.io to socket-service, / to frontend)
 kubectl apply -f k8s/ingress.yml
-kubectl apply -f k8s/socket-service-ingress.yml
 
 # Verify ingress
 kubectl get ingress -n chat-app
@@ -605,8 +589,8 @@ sudo ss -tulpn | grep :6443
 ./scripts/build-images.sh abhishekjadhav1996 v1.1.0
 
 # Update deployment
-kubectl set image deployment/auth-service-deployment \
-  auth-service=abhishekjadhav1996/chatapp-auth-service:v1.1.0 -n chat-app
+kubectl set image deployment/backend-deployment \
+  chatapp-backend=abhishekjadhav1996/chatapp-backend:v1.1.0 -n chat-app
 
 # Watch rollout
 kubectl rollout status deployment/auth-service-deployment -n chat-app

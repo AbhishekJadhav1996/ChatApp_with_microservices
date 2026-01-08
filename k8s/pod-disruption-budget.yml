@@ -1,35 +1,13 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: auth-service-pdb
+  name: backend-pdb
   namespace: chat-app
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: auth-service
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: user-service-pdb
-  namespace: chat-app
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app: user-service
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: message-service-pdb
-  namespace: chat-app
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app: message-service
+      app: backend
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -41,15 +19,4 @@ spec:
   selector:
     matchLabels:
       app: socket-service
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: api-gateway-pdb
-  namespace: chat-app
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app: api-gateway
 

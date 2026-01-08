@@ -26,7 +26,12 @@ A modern, scalable real-time chat application built with microservices architect
        │
        ▼
 ┌─────────────────────────────────────────┐
-│         API Gateway (Port 5000)          │
+│         Ingress Controller              │
+└──────┬──────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────┐
+│         Backend (Port 5001)            │
 └──────┬──────────────────────────────────┘
        │
        ├──────────┬──────────┬──────────┬──────────┐
@@ -49,7 +54,7 @@ A modern, scalable real-time chat application built with microservices architect
 - ✅ **Responsive Design**: Works seamlessly on all devices
 
 ### Production Features
-- ✅ **Microservices Architecture**: 5 independent services
+- ✅ **Microservices Architecture**: Backend with multiple services
 - ✅ **Horizontal Pod Autoscaling (HPA)**: Auto-scales up to 300% (2-9 replicas)
 - ✅ **Zero-Downtime Deployments**: Rolling updates with maxSurge and maxUnavailable
 - ✅ **Blue-Green Deployments**: Instant rollback capability
@@ -70,7 +75,7 @@ A modern, scalable real-time chat application built with microservices architect
 - **Socket.io Client** - Real-time communication
 - **Axios** - HTTP client
 
-### Backend (Microservices)
+### Backend
 - **Node.js 18** - Runtime
 - **Express** - Web framework
 - **MongoDB** - Database
@@ -85,32 +90,28 @@ A modern, scalable real-time chat application built with microservices architect
 - **HPA** - Auto-scaling
 - **Ingress** - Load balancing
 
-## 🔧 Microservices Architecture
+## 🔧 Architecture
 
-### 1. **Auth Service** (Port 5001)
-- Handles user authentication (signup, login, logout)
-- JWT token generation and validation
-- User session management
-
-### 2. **User Service** (Port 5002)
-- User profile management
-- Get users list for sidebar
-- Profile picture uploads
-
-### 3. **Message Service** (Port 5003)
-- Message CRUD operations
-- Image message handling
+### 1. **Backend** (Port 5001)
+- Handles user authentication APIs (/api/auth)
+  - Signup, login, logout
+  - JWT token generation and validation
+  - User session management
+- Handles message APIs (/api/messages)
+  - Message CRUD operations
+  - Image message handling
+  - Get users list for sidebar
 - Integrates with Socket Service for real-time updates
 
-### 4. **Socket Service** (Port 5004)
+### 2. **Socket Service** (Port 5004)
 - WebSocket connections management
 - Online user tracking
 - Real-time message broadcasting
 
-### 5. **API Gateway** (Port 5000)
-- Single entry point for all API requests
-- Routes requests to appropriate services
-- Handles CORS and cookie forwarding
+### 3. **Frontend** (Port 80)
+- React-based user interface
+- Served via Nginx
+- Communicates with Backend API and Socket Service
 
 ## 🚀 Production Features
 
@@ -214,8 +215,8 @@ cd services/socket-service
 npm install
 npm run dev
 
-# API Gateway
-cd services/api-gateway
+# Backend
+cd backend
 npm install
 npm run dev
 
@@ -269,11 +270,8 @@ Build images for all services:
 
 ```bash
 # Build and tag images
-docker build -t abhishekjadhav1996/chatapp-auth-service:latest ./services/auth-service
-docker build -t abhishekjadhav1996/chatapp-user-service:latest ./services/user-service
-docker build -t abhishekjadhav1996/chatapp-message-service:latest ./services/message-service
+docker build -t abhishekjadhav1996/chatapp-backend:latest ./backend
 docker build -t abhishekjadhav1996/chatapp-socket-service:latest ./services/socket-service
-docker build -t abhishekjadhav1996/chatapp-api-gateway:latest ./services/api-gateway
 docker build -t abhishekjadhav1996/chatapp-frontend:latest ./frontend
 
 # For K3S on EC2, images are available locally after building
@@ -308,16 +306,12 @@ kubectl apply -f k8s/mongodb-service.yml
 
 ```bash
 # Deploy all services
-kubectl apply -f k8s/auth-service-deployment.yml
-kubectl apply -f k8s/auth-service-service.yml
-kubectl apply -f k8s/user-service-deployment.yml
-kubectl apply -f k8s/user-service-service.yml
-kubectl apply -f k8s/message-service-deployment.yml
-kubectl apply -f k8s/message-service-service.yml
+kubectl apply -f k8s/backend-deployment.yml
+kubectl apply -f k8s/backend-service.yml
+kubectl apply -f k8s/backend-hpa.yml
 kubectl apply -f k8s/socket-service-deployment.yml
 kubectl apply -f k8s/socket-service-service.yml
-kubectl apply -f k8s/api-gateway-deployment.yml
-kubectl apply -f k8s/api-gateway-service.yml
+kubectl apply -f k8s/socket-service-hpa.yml
 ```
 
 ### Step 6: Deploy Frontend
@@ -410,8 +404,8 @@ The default deployment uses RollingUpdate strategy:
 
 ```bash
 # Update image
-kubectl set image deployment/auth-service-deployment \
-  auth-service=abhishekjadhav1996/chatapp-auth-service:v1.1.0 -n chat-app
+kubectl set image deployment/backend-deployment \
+  chatapp-backend=abhishekjadhav1996/chatapp-backend:v1.1.0 -n chat-app
 
 # Watch rollout
 kubectl rollout status deployment/auth-service-deployment -n chat-app
