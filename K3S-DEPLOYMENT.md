@@ -204,23 +204,25 @@ kubectl get nodes
 kubectl get pods --all-namespaces
 ```
 
-### Step 3: Install NGINX Ingress Controller
+### Step 3: Verify Traefik Ingress Controller
 
-K3S comes with Traefik by default, but we'll use NGINX Ingress for better compatibility:
+K3S comes with Traefik by default, which is already configured and running:
 
 ```bash
-# Install NGINX Ingress Controller
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/cloud/deploy.yaml
+# Verify Traefik is running
+kubectl get pods -n kube-system | grep traefik
 
-# Wait for ingress controller to be ready
-kubectl wait --namespace ingress-nginx \
-  --for=condition=ready pod \
-  --selector=app.kubernetes.io/component=controller \
-  --timeout=300s
+# Check Traefik service
+kubectl get svc -n kube-system | grep traefik
 
-# Verify ingress controller is running
-kubectl get pods -n ingress-nginx
+# Traefik should be listening on port 80 and 443
+# Access your application via http://<EC2_PUBLIC_IP> or your domain
 ```
+
+**Note:** The ingress.yml file is configured for Traefik (K3S default). If you prefer NGINX Ingress, you'll need to:
+1. Disable Traefik in K3S
+2. Install NGINX Ingress Controller
+3. Update ingress.yml annotations accordingly
 
 ### Step 4: Install Metrics Server (Required for HPA)
 

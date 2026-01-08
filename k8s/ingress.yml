@@ -4,40 +4,38 @@ metadata:
   name: chatapp-ingress
   namespace: chat-app
   labels:
-    name: chatapp-ingress
+    app: chatapp
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-    nginx.ingress.kubernetes.io/websocket-services: "socket-service"
-    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    # Traefik WebSocket support
+    traefik.ingress.kubernetes.io/websocket-services: "socket-service"
+    # Route via HTTP entrypoint
+    traefik.ingress.kubernetes.io/router.entrypoints: "web"
 spec:
+  ingressClassName: traefik
   rules:
-  - host: chat-tws.com
-    http:
+  - http:
       paths:
-      # Frontend
-      - pathType: Prefix
-        path: "/"
-        backend:
-          service:
-            name: frontend
-            port: 
-              number: 80
-      # Backend API routes
-      - pathType: Prefix
-        path: "/api"
-        backend:
-          service:
-            name: backend
-            port: 
-              number: 5001
-      # Socket.io WebSocket connections
-      - pathType: Prefix
-        path: "/socket.io"
-        backend:
-          service:
-            name: socket-service
-            port:
-              number: 5004
+        # Socket.io WebSocket - must be first (most specific)
+        - path: "/socket.io"
+          pathType: Prefix
+          backend:
+            service:
+              name: socket-service
+              port:
+                number: 5004
+        # Backend API - must be before frontend to match /api first
+        - path: "/api"
+          pathType: Prefix
+          backend:
+            service:
+              name: backend
+              port:
+                number: 5001
+        # Frontend - must be last to catch all other routes
+        - path: "/"
+          pathType: Prefix
+          backend:
+            service:
+              name: frontend
+              port:
+                number: 80
