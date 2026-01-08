@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: api-gateway
-        image: chatapp/api-gateway:latest
+        image: abhishekjadhav1996/chatapp-api-gateway:latest
         ports:
         - containerPort: 5000
         env:

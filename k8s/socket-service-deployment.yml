@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: socket-service
-        image: chatapp/socket-service:latest
+        image: abhishekjadhav1996/chatapp-socket-service:latest
         ports:
         - containerPort: 5004
         env:

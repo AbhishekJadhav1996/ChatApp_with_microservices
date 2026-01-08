@@ -114,7 +114,7 @@ kubectl scale deployment/auth-service-deployment --replicas=4 -n chat-app
 ### Update Image
 ```bash
 kubectl set image deployment/auth-service-deployment \
-  auth-service=chatapp/auth-service:v1.1.0 -n chat-app
+  auth-service=abhishekjadhav1996/chatapp-auth-service:v1.1.0 -n chat-app
 ```
 
 ### Rollback

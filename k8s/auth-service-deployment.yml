@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: auth-service
-        image: chatapp/auth-service:latest
+        image: abhishekjadhav1996/chatapp-auth-service:latest
         ports:
         - containerPort: 5001
         env:

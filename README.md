@@ -153,7 +153,8 @@ A modern, scalable real-time chat application built with microservices architect
 - **Git** - Version control
 
 ### Kubernetes Cluster Options
-- **Local**: Minikube, Kind, or Docker Desktop Kubernetes
+- **Local/EC2**: K3S (lightweight Kubernetes - recommended for EC2)
+- **Local**: Kind, or Docker Desktop Kubernetes
 - **Cloud**: AWS EKS, Google GKE, Azure AKS
 - **Ingress Controller**: NGINX Ingress Controller
 
@@ -226,13 +227,34 @@ npm run dev
 
 ## ☸️ Kubernetes Deployment
 
+> **🚀 Deploying on EC2?** See the comprehensive [K3S-DEPLOYMENT.md](./K3S-DEPLOYMENT.md) guide for:
+> - Complete EC2 instance setup
+> - Security group port configuration
+> - K3S installation and configuration
+> - Step-by-step deployment instructions
+> - Troubleshooting guide
+
 ### Step 1: Prepare Kubernetes Cluster
 
-#### For Minikube:
+#### For K3S (Recommended for EC2):
 ```bash
-minikube start
-minikube addons enable ingress
+# Install K3S
+curl -sfL https://get.k3s.io | sh -
+
+# Configure kubectl
+mkdir -p ~/.kube
+sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+sudo chown $USER:$USER ~/.kube/config
+export KUBECONFIG=~/.kube/config
+
+# Install NGINX Ingress Controller
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/cloud/deploy.yaml
+
+# Install Metrics Server (if not included)
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 ```
+
+**📖 For detailed EC2 setup instructions, see [K3S-DEPLOYMENT.md](./K3S-DEPLOYMENT.md)**
 
 #### For Docker Desktop:
 - Enable Kubernetes in Docker Desktop settings
@@ -247,20 +269,15 @@ Build images for all services:
 
 ```bash
 # Build and tag images
-docker build -t chatapp/auth-service:latest ./services/auth-service
-docker build -t chatapp/user-service:latest ./services/user-service
-docker build -t chatapp/message-service:latest ./services/message-service
-docker build -t chatapp/socket-service:latest ./services/socket-service
-docker build -t chatapp/api-gateway:latest ./services/api-gateway
-docker build -t chatapp/frontend:latest ./frontend
+docker build -t abhishekjadhav1996/chatapp-auth-service:latest ./services/auth-service
+docker build -t abhishekjadhav1996/chatapp-user-service:latest ./services/user-service
+docker build -t abhishekjadhav1996/chatapp-message-service:latest ./services/message-service
+docker build -t abhishekjadhav1996/chatapp-socket-service:latest ./services/socket-service
+docker build -t abhishekjadhav1996/chatapp-api-gateway:latest ./services/api-gateway
+docker build -t abhishekjadhav1996/chatapp-frontend:latest ./frontend
 
-# If using Minikube, load images into Minikube
-minikube image load chatapp/auth-service:latest
-minikube image load chatapp/user-service:latest
-minikube image load chatapp/message-service:latest
-minikube image load chatapp/socket-service:latest
-minikube image load chatapp/api-gateway:latest
-minikube image load chatapp/frontend:latest
+# For K3S on EC2, images are available locally after building
+# For production, push images to Docker Hub or ECR (see K3S-DEPLOYMENT.md)
 ```
 
 ### Step 3: Create Secrets
@@ -374,14 +391,15 @@ kubectl logs -f deployment/auth-service-deployment -n chat-app
 ### Step 12: Access Application
 
 ```bash
-# Get ingress IP (for Minikube)
-minikube ip
+# Get ingress external IP or NodePort
+kubectl get svc -n ingress-nginx ingress-nginx-controller
 
 # Or get ingress hostname
 kubectl get ingress -n chat-app
 
-# Access via browser
-# http://<ingress-ip> or http://chat-tws.com (if configured)
+# For K3S on EC2, access via:
+# http://<EC2_PUBLIC_IP>:<NODEPORT> or http://your-domain.com
+# See K3S-DEPLOYMENT.md for detailed access instructions
 ```
 
 ## 🔄 Deployment Strategies
@@ -393,7 +411,7 @@ The default deployment uses RollingUpdate strategy:
 ```bash
 # Update image
 kubectl set image deployment/auth-service-deployment \
-  auth-service=chatapp/auth-service:v1.1.0 -n chat-app
+  auth-service=abhishekjadhav1996/chatapp-auth-service:v1.1.0 -n chat-app
 
 # Watch rollout
 kubectl rollout status deployment/auth-service-deployment -n chat-app

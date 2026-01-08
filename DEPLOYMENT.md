@@ -2,15 +2,24 @@
 
 This guide provides detailed step-by-step instructions for deploying the Chat Application to production using Kubernetes.
 
+## 🎯 Quick Links
+
+- **For K3S on EC2**: See [K3S-DEPLOYMENT.md](./K3S-DEPLOYMENT.md) for complete EC2 setup, security group configuration, and K3S-specific instructions
+- **For other Kubernetes clusters**: Follow this guide
+
 ## 📋 Pre-Deployment Checklist
 
 - [ ] Kubernetes cluster (v1.24+) is running
+  - **K3S on EC2**: See [K3S-DEPLOYMENT.md](./K3S-DEPLOYMENT.md) for installation
+  - **Other clusters**: Ensure cluster is accessible via kubectl
 - [ ] kubectl is configured and connected to cluster
-- [ ] Docker images are built and pushed to registry
-- [ ] Ingress controller is installed
+- [ ] Docker images are built and pushed to registry (or available locally for K3S)
+- [ ] Ingress controller is installed (NGINX Ingress recommended)
+- [ ] Metrics Server is installed (required for HPA)
 - [ ] MongoDB credentials are ready
 - [ ] Cloudinary credentials are ready
 - [ ] JWT secret is generated
+- [ ] **For EC2**: Security groups configured with required ports (see [K3S-DEPLOYMENT.md](./K3S-DEPLOYMENT.md))
 
 ## 🏗️ Step-by-Step Deployment
 
@@ -299,7 +308,7 @@ kubectl run -it --rm test --image=curlimages/curl --restart=Never -- \
 ```bash
 # Update image
 kubectl set image deployment/auth-service-deployment \
-  auth-service=chatapp/auth-service:v1.1.0 -n chat-app
+  auth-service=abhishekjadhav1996/chatapp-auth-service:v1.1.0 -n chat-app
 
 # Watch rollout
 kubectl rollout status deployment/auth-service-deployment -n chat-app

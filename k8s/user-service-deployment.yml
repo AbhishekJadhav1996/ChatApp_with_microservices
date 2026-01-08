@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: user-service
-        image: chatapp/user-service:latest
+        image: abhishekjadhav1996/chatapp-user-service:latest
         ports:
         - containerPort: 5002
         env:

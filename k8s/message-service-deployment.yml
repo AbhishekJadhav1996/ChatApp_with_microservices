@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: message-service
-        image: chatapp/message-service:latest
+        image: abhishekjadhav1996/chatapp-message-service:latest
         ports:
         - containerPort: 5003
         env:
