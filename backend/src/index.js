@@ -25,6 +25,11 @@ app.use(
   })
 );
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", service: "backend" });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
