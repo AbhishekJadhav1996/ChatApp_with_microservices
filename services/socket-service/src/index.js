@@ -10,7 +10,7 @@ const app = express();
 const server = http.createServer(app);
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: process.env.FRONTEND_URL === "*" ? true : (process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:5173"),
   credentials: true,
 }));
 
@@ -18,7 +18,7 @@ app.use(express.json());
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: process.env.FRONTEND_URL === "*" ? true : (process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:5173"),
     credentials: true,
   },
 });

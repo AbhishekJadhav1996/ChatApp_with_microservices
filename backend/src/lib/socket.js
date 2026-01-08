@@ -5,9 +5,13 @@ import express from "express";
 const app = express();
 const server = http.createServer(app);
 
+// Socket.io CORS configuration
+// In production, allow connections from frontend URL or same origin
+const socketCorsOrigin = process.env.FRONTEND_URL === "*" ? true : (process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:5173");
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173"],
+    origin: socketCorsOrigin === true ? true : [socketCorsOrigin, "http://localhost:5173"],
+    credentials: true,
   },
 });
 

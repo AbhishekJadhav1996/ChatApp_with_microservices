@@ -32,7 +32,9 @@ spec:
         - name: PORT
           value: "5004"
         - name: FRONTEND_URL
-          value: "http://localhost:5173"
+          value: "*"
+        - name: CORS_ORIGIN
+          value: "*"
         resources:
           requests:
             memory: "256Mi"

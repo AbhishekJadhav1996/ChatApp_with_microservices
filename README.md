@@ -29,19 +29,45 @@ A modern, scalable real-time chat application built with microservices architect
 │         Ingress Controller              │
 └──────┬──────────────────────────────────┘
        │
-       ▼
-┌─────────────────────────────────────────┐
-│         Backend (Port 5001)            │
-└──────┬──────────────────────────────────┘
-       │
-       ├──────────┬──────────┬──────────┬──────────┐
-       ▼          ▼          ▼          ▼          ▼
-┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
-│   Auth   │ │   User   │ │ Message  │ │  Socket  │ │ MongoDB  │
-│ Service  │ │ Service  │ │ Service  │ │ Service  │ │          │
-│  :5001   │ │  :5002   │ │  :5003   │ │  :5004   │ │  :27017  │
-└──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘
+       ├──────────┬──────────┬──────────┐
+       ▼          ▼          ▼          ▼
+┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+│ Backend  │ │  Socket │ │ MongoDB  │ │ Frontend │
+│ Service  │ │ Service │ │          │ │          │
+│  :5001   │ │  :5004  │ │  :27017  │ │   :80    │
+└──────────┘ └──────────┘ └──────────┘ └──────────┘
 ```
+
+### Microservices Used in This Application
+
+This application uses a **simplified microservices architecture** with the following services:
+
+1. **Backend Service** (Port 5001)
+   - Handles all REST API endpoints:
+     - `/api/auth` - User authentication (signup, login, logout, check auth)
+     - `/api/messages` - Message CRUD operations and user list
+   - Integrates with Socket Service for real-time updates
+   - Uses MongoDB for data persistence
+
+2. **Socket Service** (Port 5004)
+   - Manages WebSocket connections via Socket.io
+   - Tracks online users
+   - Broadcasts real-time messages and online status updates
+
+3. **Frontend** (Port 80)
+   - React-based user interface
+   - Served via Nginx
+   - Communicates with Backend API and Socket Service
+
+4. **MongoDB** (Port 27017)
+   - Database for storing users and messages
+   - Persistent storage with volume mounts
+
+**Note:** The following microservices are **NOT used** in this deployment:
+- ❌ Auth Service (functionality integrated into Backend)
+- ❌ User Service (functionality integrated into Backend)
+- ❌ Message Service (functionality integrated into Backend)
+- ❌ API Gateway (not needed with simplified architecture)
 
 ## ✨ Features
 
@@ -90,34 +116,43 @@ A modern, scalable real-time chat application built with microservices architect
 - **HPA** - Auto-scaling
 - **Ingress** - Load balancing
 
-## 🔧 Architecture
+## 🔧 Microservices Architecture
 
-### 1. **Backend** (Port 5001)
-- Handles user authentication APIs (/api/auth)
+### 1. **Backend Service** (Port 5001)
+- **Authentication APIs** (`/api/auth`)
   - Signup, login, logout
   - JWT token generation and validation
-  - User session management
-- Handles message APIs (/api/messages)
+  - User session management via HTTP-only cookies
+- **Message APIs** (`/api/messages`)
   - Message CRUD operations
-  - Image message handling
+  - Image message handling via Cloudinary
   - Get users list for sidebar
 - Integrates with Socket Service for real-time updates
+- Uses MongoDB for data persistence
 
 ### 2. **Socket Service** (Port 5004)
-- WebSocket connections management
+- WebSocket connections management via Socket.io
 - Online user tracking
 - Real-time message broadcasting
+- Online/offline status updates
 
 ### 3. **Frontend** (Port 80)
 - React-based user interface
 - Served via Nginx
-- Communicates with Backend API and Socket Service
+- Communicates with Backend API (`/api/*`) and Socket Service (`/socket.io/*`)
+- JWT tokens stored in HTTP-only cookies for security
+
+### 4. **MongoDB** (Port 27017)
+- Database for users and messages
+- Persistent storage with Kubernetes volumes
 
 ## 🚀 Production Features
 
 ### Horizontal Pod Autoscaler (HPA) - **Fully Automatic**
 - ✅ **Automatic Scaling**: No manual intervention required - HPA works continuously
-- **Scaling Range**: 2-6 replicas (Auth, User, Gateway), 2-9 replicas (Message, Socket)
+- **Scaling Range**: 
+  - Backend: 2-6 replicas
+  - Socket Service: 2-9 replicas
 - **Scaling Triggers**: CPU (70%) and Memory (80%) utilization
 - **Scaling Speed**: Up to 100% increase per 15 seconds
 - **Scale Down**: 50% decrease per 60 seconds with 5-minute stabilization
@@ -176,11 +211,9 @@ docker-compose -f docker-compose.microservices.yml up -d --build
 
 3. **Access the application**
 - Frontend: http://localhost
-- API Gateway: http://localhost:5000
+- Backend API: http://localhost:5001/api
 - Health Checks:
-  - Auth Service: http://localhost:5001/health
-  - User Service: http://localhost:5002/health
-  - Message Service: http://localhost:5003/health
+  - Backend: http://localhost:5001/health
   - Socket Service: http://localhost:5004/health
 
 ### Option 2: Local Development
@@ -193,29 +226,14 @@ docker run -d -p 27017:27017 --name mongodb \
   mongo:7
 ```
 
-2. **Start each service** (in separate terminals)
+2. **Start services** (in separate terminals)
 ```bash
-# Auth Service
-cd services/auth-service
-npm install
-npm run dev
-
-# User Service
-cd services/user-service
-npm install
-npm run dev
-
-# Message Service
-cd services/message-service
-npm install
-npm run dev
-
 # Socket Service
 cd services/socket-service
 npm install
 npm run dev
 
-# Backend
+# Backend (handles auth and messages)
 cd backend
 npm install
 npm run dev
@@ -304,11 +322,15 @@ kubectl apply -f k8s/mongodb-service.yml
 
 ### Step 5: Deploy Microservices
 
+**Note:** This application uses a simplified architecture with only Backend and Socket Service. The unused microservices (auth-service, user-service, message-service, api-gateway) have been removed.
+
 ```bash
-# Deploy all services
+# Deploy Backend (handles auth and messages APIs)
 kubectl apply -f k8s/backend-deployment.yml
 kubectl apply -f k8s/backend-service.yml
 kubectl apply -f k8s/backend-hpa.yml
+
+# Deploy Socket Service (WebSocket connections)
 kubectl apply -f k8s/socket-service-deployment.yml
 kubectl apply -f k8s/socket-service-service.yml
 kubectl apply -f k8s/socket-service-hpa.yml
@@ -346,7 +368,8 @@ kubectl get hpa -n chat-app
 watch kubectl get hpa -n chat-app
 
 # View detailed HPA metrics
-kubectl describe hpa auth-service-hpa -n chat-app
+kubectl describe hpa backend-hpa -n chat-app
+kubectl describe hpa socket-service-hpa -n chat-app
 ```
 
 **Note:** HPA requires metrics-server. The deployment script automatically installs it if missing.
@@ -379,7 +402,8 @@ kubectl get hpa -n chat-app
 kubectl get ingress -n chat-app
 
 # View logs
-kubectl logs -f deployment/auth-service-deployment -n chat-app
+kubectl logs -f deployment/backend-deployment -n chat-app
+kubectl logs -f deployment/socket-service-deployment -n chat-app
 ```
 
 ### Step 12: Access Application
@@ -408,13 +432,15 @@ kubectl set image deployment/backend-deployment \
   chatapp-backend=abhishekjadhav1996/chatapp-backend:v1.1.0 -n chat-app
 
 # Watch rollout
-kubectl rollout status deployment/auth-service-deployment -n chat-app
+kubectl rollout status deployment/backend-deployment -n chat-app
 
 # Rollback if needed
-kubectl rollout undo deployment/auth-service-deployment -n chat-app
+kubectl rollout undo deployment/backend-deployment -n chat-app
 ```
 
 ### Blue-Green Deployment
+
+**Note:** Blue-Green and Canary deployment examples reference auth-service which is not used in this simplified architecture. For production deployments, use the backend-deployment instead.
 
 1. **Deploy Green Version**
 ```bash
@@ -425,12 +451,12 @@ kubectl apply -f k8s/blue-green-deployment.yml
 2. **Switch Traffic**
 ```bash
 # Update service selector to point to green
-kubectl patch svc auth-service -n chat-app -p '{"spec":{"selector":{"version":"green"}}}'
+kubectl patch svc backend -n chat-app -p '{"spec":{"selector":{"version":"green"}}}'
 ```
 
 3. **Rollback to Blue** (if needed)
 ```bash
-kubectl patch svc auth-service -n chat-app -p '{"spec":{"selector":{"version":"blue"}}}'
+kubectl patch svc backend -n chat-app -p '{"spec":{"selector":{"version":"blue"}}}'
 ```
 
 ### Canary Deployment
@@ -444,7 +470,7 @@ kubectl apply -f k8s/canary-deployment.yml
 2. **Monitor Canary** (25% traffic)
 ```bash
 # Check canary pod logs
-kubectl logs -f deployment/auth-service-canary -n chat-app
+kubectl logs -f deployment/backend-canary -n chat-app
 
 # Check metrics
 kubectl top pods -n chat-app
@@ -453,8 +479,8 @@ kubectl top pods -n chat-app
 3. **Promote to Stable** (if successful)
 ```bash
 # Scale up canary, scale down stable
-kubectl scale deployment/auth-service-canary --replicas=3 -n chat-app
-kubectl scale deployment/auth-service-stable --replicas=0 -n chat-app
+kubectl scale deployment/backend-canary --replicas=3 -n chat-app
+kubectl scale deployment/backend-stable --replicas=0 -n chat-app
 ```
 
 ## 📊 Monitoring & Scaling
@@ -463,7 +489,8 @@ kubectl scale deployment/auth-service-stable --replicas=0 -n chat-app
 
 ```bash
 # View HPA details
-kubectl describe hpa auth-service-hpa -n chat-app
+kubectl describe hpa backend-hpa -n chat-app
+kubectl describe hpa socket-service-hpa -n chat-app
 
 # Watch HPA in real-time
 watch kubectl get hpa -n chat-app
@@ -473,7 +500,8 @@ watch kubectl get hpa -n chat-app
 
 ```bash
 # Scale a deployment manually
-kubectl scale deployment/auth-service-deployment --replicas=4 -n chat-app
+kubectl scale deployment/backend-deployment --replicas=4 -n chat-app
+kubectl scale deployment/socket-service-deployment --replicas=4 -n chat-app
 ```
 
 ### Resource Usage
@@ -527,7 +555,7 @@ kubectl get endpoints -n chat-app
 
 # Test service connectivity
 kubectl run -it --rm debug --image=busybox --restart=Never -- \
-  wget -qO- http://auth-service:5001/health
+  wget -qO- http://backend:5001/health
 ```
 
 ### HPA Not Scaling
@@ -537,7 +565,8 @@ kubectl run -it --rm debug --image=busybox --restart=Never -- \
 kubectl top nodes
 
 # Verify HPA configuration
-kubectl describe hpa auth-service-hpa -n chat-app
+kubectl describe hpa backend-hpa -n chat-app
+kubectl describe hpa socket-service-hpa -n chat-app
 
 # Check resource usage
 kubectl top pods -n chat-app
