@@ -17,10 +17,14 @@ app.use(cors({
 app.use(express.json());
 
 const io = new Server(server, {
+  path: "/socket.io/",
   cors: {
     origin: process.env.FRONTEND_URL === "*" ? true : (process.env.FRONTEND_URL || process.env.CORS_ORIGIN || "http://localhost:5173"),
     credentials: true,
+    methods: ["GET", "POST"],
   },
+  transports: ["websocket", "polling"],
+  allowEIO3: true,
 });
 
 // Store user socket mappings
