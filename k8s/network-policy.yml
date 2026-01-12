@@ -9,13 +9,9 @@ spec:
   - Ingress
   - Egress
   ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: ingress-nginx
-    - podSelector:
-        matchLabels:
-          app: frontend
+  # Allow all ingress traffic (Traefik from kube-system and other sources)
+  # For production, you can restrict this to specific namespaces
+  - {}
   egress:
   - to:
     - podSelector:
